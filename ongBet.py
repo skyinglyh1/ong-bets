@@ -1,16 +1,18 @@
 from boa.interop.Ontology.Contract import Migrate
-from boa.interop.System.Storage import GetContext, Get, Put, Delete
-from boa.interop.System.Runtime import CheckWitness, GetTime, Notify, Serialize, Deserialize
+from boa.interop.System.Storage import GetContext, Get, Put
+from boa.interop.System.Runtime import CheckWitness, GetTime, Notify
 from boa.interop.System.ExecutionEngine import GetExecutingScriptHash, GetCallingScriptHash, GetEntryScriptHash
 from boa.interop.Ontology.Native import Invoke
-from boa.interop.Ontology.Runtime import GetRandomHash
-from boa.builtins import ToScriptHash, concat, state
+from boa.interop.Ontology.Runtime import GetCurrentBlockHash
+from boa.builtins import ToScriptHash, state
 
 # the script hash of this contract
 ContractAddress = GetExecutingScriptHash()
 ONGAddress = bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02')
-LargeNumber = 1000000000000000000000000000000
-Admin = ToScriptHash("AQf4Mzu1YJrhz9f3aRkkwSm9n3qhXGSh4p")
+# E.T account
+Admin = ToScriptHash("ARiYs54Kq9T5h3QY1xTyXGb9gsJ1TUbMB7")
+# skyinglyh account
+# Admin = ToScriptHash("AQf4Mzu1YJrhz9f3aRkkwSm9n3qhXGSh4p")
 INITIALIZED = "INIT"
 TOTAL_ONG_KEY = "totalONG"
 
@@ -30,6 +32,19 @@ def Main(operation, args):
             return withdraw(ongAmount)
         else:
             return False
+    if operation == "migrateContract":
+        if len(args) != 9:
+            return False
+        account = args[0]
+        code = args[1]
+        needStorage = args[2]
+        name = args[3]
+        version = args[4]
+        author = args[5]
+        email = args[6]
+        description = args[7]
+        newReversedContractHash = args[8]
+        return migrateContract(account, code, needStorage, name, version, author, email, description, newReversedContractHash)
     ############### for Admin to invoke Begin ##################
 
     ############### for players to invoke Begin ##################
@@ -74,6 +89,12 @@ def bet(account, ongAmount, number):
     callerHash = GetCallingScriptHash()
     entryHash = GetEntryScriptHash()
     Require(callerHash == entryHash)
+
+    # make sure the contract has enough ong to pay to accont if account wins
+    tryPayOutToWin = _calculatePayOutToWin(ongAmount, number)
+    totalOngAmount = getTotalONG()
+    Require(totalOngAmount >= tryPayOutToWin)
+
     Require(_transferONG(account, ContractAddress, ongAmount))
 
     Require(number < 97)
@@ -81,12 +102,12 @@ def bet(account, ongAmount, number):
     theNumber = _rollANumber()
     payOutToWin = 0
     if theNumber < number:
-        payOutToWin = _calculatePayOutToWin(ongAmount, number)
+        payOutToWin = tryPayOutToWin
         Require(_transferONGFromContact(account, payOutToWin))
         ongAmountToBeSub = Sub(payOutToWin, ongAmount)
-        Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), ongAmountToBeSub))
+        Put(GetContext(), TOTAL_ONG_KEY, Sub(totalOngAmount, ongAmountToBeSub))
     else:
-        Put(GetContext(), TOTAL_ONG_KEY, Add(getTotalONG(), ongAmount))
+        Put(GetContext(), TOTAL_ONG_KEY, Add(totalOngAmount, ongAmount))
 
     Notify(["bet", account, number, theNumber,ongAmount, payOutToWin])
 
@@ -107,6 +128,21 @@ def withdraw(ongAmount):
     Notify(["withdraw", ongAmount])
     return True
 
+def migrateContract(code, needStorage, name, version, author, email, description, newReversedContractHash):
+    RequireWitness(Admin)
+
+    res = _transferONGFromContact(newReversedContractHash, getTotalONG())
+    Require(res)
+    if res == True:
+        res = Migrate(code, needStorage, name, version, author, email, description)
+        Require(res)
+        Notify(["Migrate Contract successfully", Admin, GetTime()])
+        return True
+    else:
+        Notify(["MigrateContractError", "transfer ONG to new contract error"])
+        return False
+
+
 def getTotalONG():
     return Get(GetContext(), TOTAL_ONG_KEY)
 
@@ -117,7 +153,7 @@ def _calculatePayOutToWin(ongAmount, number):
     return payOutToWin
 
 def _rollANumber():
-    blockHash = GetRandomHash()
+    blockHash = GetCurrentBlockHash()
     theNumber = abs(blockHash) % 100
     theNumber = Add(abs(theNumber), 1)
     return theNumber

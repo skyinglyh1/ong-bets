@@ -26,9 +26,15 @@ number -- 玩家竞猜的数字(当产生的随机数小于该数字时，用户
 
 ```invest(ongAmount)``` -- 合约管理员向合约内投入ONG，用来支付用户获胜时赢取的ONG。
 
-###### 2.3 invest()
+###### 2.3 withdraw()
 
 ```withdraw(ongAmount)``` -- 合约管理员从合约内向admin帐户提现。
+
+###### 2.3 migrateContract()
+
+```migrateContract(code, needStorage, name, version, author, email, description, newReversedContractHash)``` -- 合约管理员迁移合约，功能为旧合约所有数据迁移到新合约内，且旧合约的所有ONG转入至新合约内。
+
+
 
 #### 3. 对所有人公开的信息查询
 ###### 3.1 getTotalONG()
