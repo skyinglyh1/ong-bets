@@ -235,9 +235,9 @@ def setParameters(dividendForBankersPercentage, runningVaultPercentage):
 
 def startNewRound(ongAmount):
     RequireWitness(Admin)
-    currntRound = getCurrentRound()
+    Put(GetContext(), CURRENT_ROUND_KEY, Add(getCurrentRound(), 1))
     setInitialInvest(ongAmount)
-
+    Notify(["startNewRound", getCurrentRound()])
 
 def setInitialInvest(ongAmount):
     RequireWitness(Admin)
@@ -246,7 +246,7 @@ def setInitialInvest(ongAmount):
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), ROUND_STATUS), STATUS_ON)
     bankerInvest(Admin, ongAmount)
 
-    Notify(["setInitialInvest", ongAmount])
+    Notify(["setInitialInvest", currentRound, ongAmount])
     return True
 
 
@@ -450,7 +450,7 @@ def bankerExit(account):
     # update the banker's investment
     Delete(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(BANKER_INVEST_BALANCE_PREFIX, account)))
 
-    Notify(["bankerExit", account])
+    Notify(["bankerExit", currentRound, account])
     return True
 ############### for Bankers to invoke End ##################
 ############### for players to invoke Begin ##################
@@ -544,7 +544,7 @@ def bet(account, ongAmount, number):
         profitPerInvestmentForBankersToBeAdd = Div(Mul(ongAmount, MagnitudeForProfitPerSth), getBankersInvestment(currentRound))
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY), Add(profitPerInvestmentForBankersToBeAdd, getProfitPerInvestmentForBankers(currentRound)))
 
-    Notify(["bet", account, number, theNumber,ongAmount, payOutToWin, currentRound])
+    Notify(["bet", currentRound, account, number, theNumber,ongAmount, payOutToWin])
     return True
 ############### for players to invoke End ##################
 ############### for all to pre-invoke Begin ##################
