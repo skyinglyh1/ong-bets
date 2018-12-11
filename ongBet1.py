@@ -1,6 +1,6 @@
 from boa.interop.Ontology.Contract import Migrate
 from boa.interop.System.Storage import GetContext, Get, Put, Delete
-from boa.interop.System.Runtime import CheckWitness, GetTime, Notify
+from boa.interop.System.Runtime import CheckWitness, GetTime, Notify, Serialize, Deserialize
 from boa.interop.System.ExecutionEngine import GetExecutingScriptHash, GetCallingScriptHash, GetEntryScriptHash
 from boa.interop.Ontology.Native import Invoke
 from boa.interop.Ontology.Runtime import GetCurrentBlockHash
@@ -18,7 +18,9 @@ INITIALIZED = "Init"
 
 TOTAL_ONG_KEY = "TotalONG"
 COMMISSION_KEY = "Commission"
-BANKERS_START_KEY = "BankersStart"
+
+
+
 
 ROUND_PREFIX = "RoundPrefix"
 CURRENT_ROUND_KEY = "CurrentRound"
@@ -29,6 +31,8 @@ DIVIDEND_FOR_BANKERS_PERCENTAGE = "DividendForBankersPercentage"
 # RUNNING_VAULT_PERCENTAGE -- to store 50
 RUNNING_VAULT_PERCENTAGE = "RunningVaultPercentage"
 
+# ROUND_PREFIX +  CURRENT_ROUND_KEY + BANKERS_LIST_KEY
+BANKERS_LIST_KEY = "BankersStart"
 
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKERS_INVESTMENT_KEY -- total investment
 BANKERS_INVESTMENT_KEY = "BankersInvestment"
@@ -53,6 +57,8 @@ BANKER_RUNING_VAULT_BALANCE_PREFIX = "G4"
 BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY = "BankerLastTimeUpdateDividendRound"
 # BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY + account  -- store the round number the banker last time updates his earning
 BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY = "BankerLastTimeUpdateEarningRound"
+# BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY + account
+BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY = "BankerLastTimeCollectRunShareRound"
 
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKER_DIVIDEND_BALANCE_PREFIX + account -- store the account's dividend as a banker
 BANKER_DIVIDEND_BALANCE_PREFIX = "G5"
@@ -77,11 +83,13 @@ def Main(operation, args):
         dividendForBankersPercentage = args[0]
         runningVaultPercentage = args[1]
         return setParameters(dividendForBankersPercentage, runningVaultPercentage)
-    if operation == "setInitialInvest":
+    if operation == "startNewRound":
         if len(args) != 1:
             return False
         ongAmount = args[0]
-        return setInitialInvest(ongAmount)
+        return startNewRound(ongAmount)
+    if operation == "withdrawCommission":
+        return withdrawCommission()
     if operation == "migrateContract":
         if len(args) != 8:
             return False
@@ -163,6 +171,11 @@ def Main(operation, args):
             return False
         roundNumber = args[0]
         return getRealTimeRunningVault(roundNumber)
+    if operation == "getBankersList":
+        if len(args) != 1:
+            return False
+        roundNumber = args[0]
+        return getBankersList(roundNumber)
     ############### for all to pre-invoke End ##################
     ############### for bankers to pre-invoke Begin ##################
     if operation == "getBankerInvestment":
@@ -238,6 +251,8 @@ def startNewRound(ongAmount):
     Put(GetContext(), CURRENT_ROUND_KEY, Add(getCurrentRound(), 1))
     setInitialInvest(ongAmount)
     Notify(["startNewRound", getCurrentRound()])
+    return True
+
 
 def setInitialInvest(ongAmount):
     RequireWitness(Admin)
@@ -249,6 +264,16 @@ def setInitialInvest(ongAmount):
     Notify(["setInitialInvest", currentRound, ongAmount])
     return True
 
+def withdrawCommission():
+    RequireWitness(Admin)
+    commissionAmountToBeWithdraw = getCommission()
+    Require(_transferONGFromContact(Admin, commissionAmountToBeWithdraw))
+    # update commission amount
+    Delete(GetContext(), COMMISSION_KEY)
+    # update total ong amount
+    Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), commissionAmountToBeWithdraw))
+    Notify(["withdrawCommission", commissionAmountToBeWithdraw])
+    return True
 
 def migrateContract(code, needStorage, name, version, author, email, description, newReversedContractHash):
     RequireWitness(Admin)
@@ -292,6 +317,23 @@ def bankerInvest(account, ongAmount):
         Notify(["BankerInvestErr", 103])
         return False
 
+    # try to update banker list
+    bankersListKey = concatKey(concatKey(ROUND_PREFIX, currentRound), BANKERS_LIST_KEY)
+    bankersListInfo = Get(GetContext(), bankersListKey)
+    bankersList = []
+    if bankersListInfo:
+        bankersList = Deserialize(bankersListInfo)
+        if checkInBankerList(account, bankersList):
+            bankersList.append(account)
+        bankersListInfo = Serialize(bankersList)
+        Put(GetContext(), bankersListKey, bankersListInfo)
+    else:
+        bankersList.append(account)
+        bankersListInfo = Serialize(bankersList)
+        Put(GetContext(), bankersListKey, bankersListInfo)
+
+
+
     dividendForBankersPercentage = getDividendForBankersPercentage()
     runningVaultPercentage = getRunningVaultPercentage()
 
@@ -306,6 +348,7 @@ def bankerInvest(account, ongAmount):
     else:
         # there will be no dividend
         dividend = 0
+
     # add running vault, 50%
     runningVaultToBeAdd = Div(Mul(ongAmount, runningVaultPercentage), 100)
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), RUNNING_VAULT_KEY), Add(getRunningVault(currentRound), runningVaultToBeAdd))
@@ -373,7 +416,7 @@ def bankerWithdrawDividend(account):
     Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), bankerDividend))
 
     Notify(["bankerWithdrawDividend", account, bankerDividend])
-    return True
+    return bankerDividend
 
 
 def bankerWithdrawEarning(account):
@@ -412,14 +455,50 @@ def bankerWithdrawEarning(account):
     Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), bankerEarning))
 
     Notify(["bankerWithdrawEarning", account, bankerEarning])
-    return True
+    return bankerEarning
 
 
 def bankerWithdraw(account):
-    bankerWithdrawDividend(account)
-    bankerWithdrawEarning(account)
-    return True
+    dividend = bankerWithdrawDividend(account)
+    earning = bankerWithdrawEarning(account)
+    return Add(dividend, earning)
 
+def bankerWithdrawBeforeExit(account):
+    if CheckWitness(account) == False:
+        # "Check witness failed!",
+        Notify(["BankerExitErr", 501])
+        return False
+
+    lastTimeCollectRunShareRound = getBankerLastTimeCollectRunShareRound(account)
+    currentRound = getCurrentRound()
+    ongShareInRunningVault = 0
+    while lastTimeCollectRunShareRound <= currentRound:
+        if getRoundGameStatus(lastTimeCollectRunShareRound) == STATUS_OFF:
+            oldBankersInvestment = getBankersInvestment(lastTimeCollectRunShareRound)
+
+            # transfer his share in the running vault to his account
+            bankerBalanceInRunVault = getBankerBalanceInRunVault(lastTimeCollectRunShareRound, account)
+            ongShareInRunningVault = Add(ongShareInRunningVault, Div(Mul(bankerBalanceInRunVault, MagnitudeForProfitPerSth), getRealTimeRunningVault(lastTimeCollectRunShareRound)))
+
+            # update the bankers' investment amount
+            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, lastTimeCollectRunShareRound), BANKERS_INVESTMENT_KEY), Sub(oldBankersInvestment, getBankerInvestment(lastTimeCollectRunShareRound, account)))
+            # delete the banker's investment balance
+            Delete(GetContext(), concatKey(concatKey(ROUND_PREFIX, lastTimeCollectRunShareRound), concatKey(BANKER_INVEST_BALANCE_PREFIX, account)))
+            # update the bankers' amount in running vault
+            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, lastTimeCollectRunShareRound), RUNNING_VAULT_KEY), Sub(getRunningVault(lastTimeCollectRunShareRound), bankerBalanceInRunVault))
+            # delete the banker's balance in running vault
+            Delete(GetContext(), concatKey(concatKey(ROUND_PREFIX, lastTimeCollectRunShareRound), concatKey(BANKER_RUNING_VAULT_BALANCE_PREFIX, account)))
+
+            lastTimeCollectRunShareRound = Add(lastTimeCollectRunShareRound, 1)
+
+    Require(_transferONGFromContact(account, ongShareInRunningVault))
+    # update total ong
+    Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), ongShareInRunningVault))
+    # update BankerLastTimeCollectRunShareRound
+    Put(GetContext(), concatKey(BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY, account), currentRound)
+
+    Notify(["bankerWithdrawShareInRunVault", account, ongShareInRunningVault])
+    return True
 
 def bankerExit(account):
     # RequireWitness(account)
@@ -437,20 +516,12 @@ def bankerExit(account):
     currentRound = getCurrentRound()
 
     # withdraw the banker's dividend
-    bankerWithdrawDividend(account)
-
     # withdraw the banker's earning
-    bankerWithdrawEarning(account)
+    dividend_earning = bankerWithdraw(account)
 
-    # update the bankers total investment
-    bankerBalanceInRunVault = getBankerBalanceInRunVault(currentRound, account)
-    Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), BANKERS_INVESTMENT_KEY), Sub(getBankersInvestment(currentRound), bankerBalanceInRunVault))
-    Delete(GetContext(), concatKey(BANKER_RUNING_VAULT_BALANCE_PREFIX, account))
+    ongShareInRunningVault = bankerWithdrawBeforeExit(account)
 
-    # update the banker's investment
-    Delete(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(BANKER_INVEST_BALANCE_PREFIX, account)))
-
-    Notify(["bankerExit", currentRound, account])
+    Notify(["bankerExit", currentRound, account, Add(dividend_earning, ongShareInRunningVault)])
     return True
 ############### for Bankers to invoke End ##################
 ############### for players to invoke Begin ##################
@@ -574,6 +645,14 @@ def getRunningVault(roundNumber):
 
 def getRealTimeRunningVault(roundNumber):
     return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), REAL_TIME_RUNNING_VAULT))
+
+def getBankersList(roundNumber):
+    bankersListKey = concatKey(concatKey(ROUND_PREFIX, roundNumber), BANKERS_LIST_KEY)
+    bankersListInfo = Get(GetContext(), bankersListKey)
+    bankersList = []
+    if bankersListInfo:
+        bankersList = Deserialize(bankersListInfo)
+    return bankersList
 ############### for all to pre-invoke End ##################
 ############### for bankers to pre-invoke Begin ##################
 def getBankerInvestment(roundNumber, account):
@@ -618,15 +697,8 @@ def getBankerEarning(account):
         lastTimeUpdateEarnRound = Add(lastTimeUpdateEarnRound, 1)
 
     return Add(earningInStorage, unsharedProfitOngAmount)
-    # profitPerRunVaultShare = getProfitPerRunningVaultShare()
-    # profitPerRunVaultShareFromKey = concatKey(PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY, account)
-    # unsharedProfitPerRunVaultShare = Sub(profitPerRunVaultShare, Get(GetContext(), profitPerRunVaultShareFromKey))
-    # earningInStorage = Get(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account))
-    # bankerBalanceInRunVault = getBankerBalanceInRunVault(account)
-    # if unsharedProfitPerRunVaultShare != 0 and bankerBalanceInRunVault != 0:
-    #     earning = Mul(bankerBalanceInRunVault, unsharedProfitPerRunVaultShare)
-    #     return Add(earningInStorage, earning)
-    # return Get(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account))
+
+
 
 
 def getBankerBalanceInRunVault(roundNumber, account):
@@ -644,9 +716,17 @@ def getBankersLastTimeUpdateDividendRound(account):
 def getBankersLastTimeUpdateEarnRound(account):
     return Get(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY, account))
 
+def getBankerLastTimeCollectRunShareRound(account):
+    return Get(GetContext(), concatKey(BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY, account))
 
 
 ######################### Utility Methods Start #########################
+def checkInBankerList(account, bankersList):
+    for banker in bankersList:
+        if account == banker:
+            return True
+    return False
+
 def updateBankerDividend(account):
     currentRound = getCurrentRound()
     profitPerInvestmentForBankers = getProfitPerInvestmentForBankers(currentRound)
