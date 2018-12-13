@@ -20,52 +20,44 @@ TOTAL_ONG_KEY = "TotalONG"
 COMMISSION_KEY = "Commission"
 
 
-
-
-ROUND_PREFIX = "RoundPrefix"
-CURRENT_ROUND_KEY = "CurrentRound"
+ROUND_PREFIX = "G01"
+CURRENT_ROUND_KEY = "G02"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + ROUND_STATUS
-ROUND_STATUS = "RoundInit"
-# DIVIDEND_FOR_BANKERS_PERCENTAGE  -- to store 48
-DIVIDEND_FOR_BANKERS_PERCENTAGE = "DividendForBankersPercentage"
-# RUNNING_VAULT_PERCENTAGE -- to store 50
-RUNNING_VAULT_PERCENTAGE = "RunningVaultPercentage"
-
+ROUND_STATUS = "G03"
+# ROUND_PREFIX + CURRENT_ROUND_KEY + DIVIDEND_FOR_BANKERS_PERCENTAGE  -- to store 48
+DIVIDEND_FOR_BANKERS_PERCENTAGE = "G04"
+# ROUND_PREFIX + CURRENT_ROUND_KEY + RUNNING_VAULT_PERCENTAGE -- to store 50
+RUNNING_VAULT_PERCENTAGE = "G05"
 # ROUND_PREFIX +  CURRENT_ROUND_KEY + BANKERS_LIST_KEY
-BANKERS_LIST_KEY = "BankersStart"
-
+BANKERS_LIST_KEY = "G06"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKERS_INVESTMENT_KEY -- total investment
-BANKERS_INVESTMENT_KEY = "BankersInvestment"
+BANKERS_INVESTMENT_KEY = "G07"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + RUNNING_VAULT_KEY -- ong that has been added into the running vault
-RUNNING_VAULT_KEY = "RunningVault"
+RUNNING_VAULT_KEY = "G08"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + REAL_TIME_RUNNING_VAULT -- running vault except the earnings, ong that can be paid to the players
-REAL_TIME_RUNNING_VAULT = "RealTimeRunningVault"
+REAL_TIME_RUNNING_VAULT = "G09"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY
-PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY = "ProfitPerInvestmentForBankers"
-PROFIT_PER_RUNNING_VAULT_SHARE_KEY = "ProfitPerRunningVaultShare"
-
+PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY = "G10"
+PROFIT_PER_RUNNING_VAULT_SHARE_KEY = "G11"
 
 # ROUND_PREFIX + CURRENT_ROUND_KEY + PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY + account
-PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY = "G1"
-PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY = "G2"
+PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY = "U01"
+PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY = "U02"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKER_INVEST_BALANCE_PREFIX + account -> ong that has been invested into this game by the banker(account)
-BANKER_INVEST_BALANCE_PREFIX = "G3"
+BANKER_INVEST_BALANCE_PREFIX = "U03"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKER_RUNING_VAULT_BALANCE_PREFIX + account -> shares that the banker(account) have in the running vault
-BANKER_RUNING_VAULT_BALANCE_PREFIX = "G4"
-
+BANKER_RUNING_VAULT_BALANCE_PREFIX = "U04"
 # BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY + account  -- store the round number the banker last time updates his dividend
-BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY = "BankerLastTimeUpdateDividendRound"
+BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY = "U05"
 # BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY + account  -- store the round number the banker last time updates his earning
-BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY = "BankerLastTimeUpdateEarningRound"
-# # BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY + account
-# BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY = "BankerLastTimeCollectRunShareRound"
-
+BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY = "U06"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKER_DIVIDEND_BALANCE_PREFIX + account -- store the account's dividend as a banker
-BANKER_DIVIDEND_BALANCE_PREFIX = "G5"
+BANKER_DIVIDEND_BALANCE_PREFIX = "U07"
+
 # BANKER_DIVIDEND_BALANCE_PREFIX + account -- store the account's shared earning as a banker from the running vault
-BANKER_EARNING_BALANCE_PREFIX = "G6"
+BANKER_EARNING_BALANCE_PREFIX = "U08"
 # BANKER_WITHDRAWN_BALANCE_KEY + account -- store the account's withdrawn amount of ong
-BANKER_WITHDRAWN_BALANCE_KEY = "G7"
+BANKER_WITHDRAWN_BALANCE_KEY = "U09"
 
 
 STATUS_ON = "RUNNING"
@@ -269,9 +261,7 @@ def startNewRound(ongAmount):
             Notify(["startNewRound", 99])
             return False
         if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
-            # Please set the percentage parameters correctly before admin start new round
-            Notify(["startNewRoundErr", 100])
-            return False
+            setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
     Put(GetContext(), CURRENT_ROUND_KEY, newRound)
 
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
