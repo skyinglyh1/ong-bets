@@ -258,10 +258,11 @@ def startNewRound(ongAmount):
     if currentRound:
         if getRoundGameStatus(currentRound) != STATUS_OFF:
             # Please wait for the current round to be ended.
-            Notify(["startNewRound", 99])
+            Notify(["StartNewRoundErr", 99])
             return False
         if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
             setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
+
     Put(GetContext(), CURRENT_ROUND_KEY, newRound)
 
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
@@ -329,7 +330,7 @@ def bankerInvest(account, ongAmount):
     bankersList = []
     if bankersListInfo:
         bankersList = Deserialize(bankersListInfo)
-        if checkInBankerList(account, bankersList):
+        if not checkInBankerList(account, bankersList):
             bankersList.append(account)
         bankersListInfo = Serialize(bankersList)
         Put(GetContext(), bankersListKey, bankersListInfo)
@@ -390,16 +391,10 @@ def bankerWithdrawDividend(account):
         Notify(["BankerWithdrawDividendErr", 201])
         return False
 
-    # # Require(getBankerInvestment(account) > 0)
-    # if getBankerInvestment(account) <= 0:
-    #     # "account is NOT a banker",
-    #     Notify(["BankerWithdrawDividendErr", 202])
-    #     return False
     updateBankerDividend(account)
 
     # update the banker's dividend
     bankerDividend = getBankerDividend(account)
-    Notify(["111bankerWithdraw", bankerDividend])
     # Require(bankerDividend > 0)
     if bankerDividend <= 0:
         # banker's dividend is not greater than 0
@@ -427,12 +422,6 @@ def bankerWithdrawEarning(account):
         # "Check witness failed!",
         Notify(["BankerWithdrawEarningErr", 301])
         return False
-
-    # # RequireWitness(getBankerInvestment(account) > 0)
-    # if getBankerInvestment(account) <= 0:
-    #     # "account is NOT a banker",
-    #     Notify(["BankerWithdrawEarningErr", 302])
-    #     return False
 
     updateBankerEarning(account)
     # update the banker's earning
@@ -505,12 +494,6 @@ def bankerExit(account):
         return False
 
     currentRound = getCurrentRound()
-
-    # Require(getBankerInvestment(account) > 0)
-    if getBankerInvestment(currentRound, account) <= 0:
-        # "account is NOT a banker",
-        Notify(["BankerExitErr", 402])
-        return False
 
     # withdraw the banker's dividend and earning
     dividend_earning = bankerWithdraw(account)
@@ -677,11 +660,6 @@ def getBankersLastTimeUpdateDividendRound(account):
 
 def getBankersLastTimeUpdateEarnRound(account):
     return Get(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY, account))
-
-# def getBankerLastTimeCollectRunShareRound(account):
-#     return Get(GetContext(), concatKey(BANKER_LAST_TIME_COLLECT_RUN_SHARE_ROUND_KEY, account))
-
-
 ######################### Utility Methods Start #########################
 
 def getRunVaultShare(account):
@@ -734,11 +712,9 @@ def _getBankerDividend(account):
         if unsharedProfitPerInvestmentForBanker != 0 and bankerInvestment != 0:
             unsharedProfit = Mul(unsharedProfitPerInvestmentForBanker, bankerInvestment)
             unsharedProfitOngAmount = Add(unsharedProfit, unsharedProfitOngAmount)
-            Notify(["11_getBankerDividend", lastTimeUpdateDividendRound, unsharedProfit, unsharedProfitOngAmount])
         lastTimeUpdateDividendRound = Add(lastTimeUpdateDividendRound, 1)
 
     unsharedProfitOngAmount = Div(unsharedProfitOngAmount, MagnitudeForProfitPerSth)
-    Notify(["_getBankerDividend", dividendInStorage, unsharedProfitOngAmount])
     return [Add(dividendInStorage, unsharedProfitOngAmount), Sub(lastTimeUpdateDividendRound, 1)]
 
 def checkInBankerList(account, bankersList):
@@ -755,7 +731,6 @@ def updateBankerDividend(account):
     res = _getBankerDividend(account)
     dividend = res[0]
     lastTimeUpdateDividendRound = res[1]
-    Notify(["updateBankerDividend", dividend, lastTimeUpdateDividendRound])
     if dividend > 0 and lastTimeUpdateDividendRound == currentRound:
         Put(GetContext(), concatKey(BANKER_DIVIDEND_BALANCE_PREFIX, account), dividend)
         Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY, account), lastTimeUpdateDividendRound)
@@ -870,22 +845,22 @@ https://github.com/ONT-Avocados/python-template/blob/master/libs/SafeMath.py
 """
 
 def Add(a, b):
-	"""
+    """
 	Adds two numbers, throws on overflow.
 	"""
-	c = a + b
-	Require(c >= a)
-	return c
+    c = a + b
+    Require(c >= a)
+    return c
 
 def Sub(a, b):
-	"""
-	Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+    """
+    Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
     :param a: operand a
     :param b: operand b
     :return: a - b if a - b > 0 or revert the transaction.
-	"""
-	Require(a>=b)
-	return a-b
+    """
+    Require(a>=b)
+    return a-b
 
 def ASub(a, b):
     if a > b:
@@ -896,25 +871,25 @@ def ASub(a, b):
         return 0
 
 def Mul(a, b):
-	"""
-	Multiplies two numbers, throws on overflow.
+    """
+    Multiplies two numbers, throws on overflow.
     :param a: operand a
     :param b: operand b
     :return: a - b if a - b > 0 or revert the transaction.
-	"""
-	if a == 0:
-		return 0
-	c = a * b
-	Require(c / a == b)
-	return c
+    """
+    if a == 0:
+        return 0
+    c = a * b
+    Require(c / a == b)
+    return c
 
 def Div(a, b):
-	"""
-	Integer division of two numbers, truncating the quotient.
-	"""
-	Require(b > 0)
-	c = a / b
-	return c
+    """
+    Integer division of two numbers, truncating the quotient.
+    """
+    Require(b > 0)
+    c = a / b
+    return c
 
 def Pwr(a, b):
     """
