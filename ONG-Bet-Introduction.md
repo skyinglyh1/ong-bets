@@ -31,6 +31,7 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 ###### 2.3 bankerWithdrawEarning()
 
 ```bankerWithdrawEarning(account)``` -- 庄家将自己分额的游戏收益从合约内向自己的帐户进行提现。
+若本轮因总资金池的额度小于流入总资金池额度的10%，则本轮游戏结束，所有庄家对应的余额将会累计到自己分额的游戏收益中。
 
 ###### 2.4 bankerWithdraw()
 
@@ -49,7 +50,7 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 ###### 3.2 setParameters()
 
 ```setParameters(dividendForBankersPercentage, runningVaultPercentage)``` -- 
-合约管理员设定庄家投资时的资金流向百分比。
+合约管理员设定庄家投资时的资金流向百分比，当前轮setParameters，则下轮生效，注意俩数之和应该为98。
 
 ###### 3.3 startNewRound()
 
