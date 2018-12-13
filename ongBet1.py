@@ -238,7 +238,7 @@ def init():
         Notify(["idiot admin, you have initialized the contract"])
         return False
     else:
-
+        Put(GetContext(), INITIALIZED, 1)
         setParameters(48, 50)
         Notify(["Initialized contract successfully"])
     return True
