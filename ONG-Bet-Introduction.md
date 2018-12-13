@@ -71,10 +71,10 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 ###### *** 公共全局信息 ***
 ###### 4.1 getCurrentRound()
 ```getCurrentRound()``` -- 查看当前游戏的轮数信息。
-###### 4.2 getDividendForBankersPercentage()
-```getDividendForBankersPercentage()``` -- 查看当前合约，当banker投资时，分红给之前所有庄家的分红百分比。
+###### 4.2 getDividendForBankersPercentage(roundNumber)
+```getDividendForBankersPercentage()``` -- 查看当前合约，第roundNumber轮时，当banker投资时，分红给之前所有庄家的分红百分比。
 ###### 4.3 getRunningVaultPercentage()
-```getRunningVaultPercentage()``` -- 查看当前，当banker投资时，流入总资金池进行游戏运营的百分比。
+```getRunningVaultPercentage(roundNumber)``` -- 查看当前，第roundNumber轮时,当banker投资时，流入总资金池进行游戏运营的百分比。
 ###### 4.4 getTotalONG()
 ```getTotalONG()``` -- 查询当前合约帐户下的ONG余额。
 ###### 4.5 getCommission()
