@@ -566,14 +566,7 @@ def bet(account, ongAmount, number):
     theNumber = _rollANumber()
     payOutToWin = 0
     if theNumber < number:
-        payOutToWin = tryPayOutToWin
-        Require(_transferONGFromContact(account, payOutToWin))
-        # update total ongAmount
-        ongAmountToBeSub = Sub(payOutToWin, ongAmount)
-        Put(GetContext(), TOTAL_ONG_KEY, Sub(totalOngAmount, ongAmountToBeSub))
-        # update real time running vault
         realTimeRunVaultKey = concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT)
-        Put(GetContext(), realTimeRunVaultKey, Sub(realTimeRunVault, ongAmountToBeSub))
         realTimeRunVault = getRealTimeRunningVault(currentRound)
         # mark the game as end if real time running vault is less than 1/10 of running vault
         if realTimeRunVault < Div(getRunningVault(currentRound), 10):
@@ -586,6 +579,17 @@ def bet(account, ongAmount, number):
             Delete(GetContext(), realTimeRunVaultKey)
             Notify(["GameEnd!", currentRound])
             return False
+        payOutToWin = tryPayOutToWin
+        res = _transferONGFromContact(account, payOutToWin)
+        if res == False:
+            # if the current realtime run vault is small, player will help mark this round game as end
+            Notify(["BetErr", 507])
+            return False
+        # update total ongAmount
+        ongAmountToBeSub = Sub(payOutToWin, ongAmount)
+        Put(GetContext(), TOTAL_ONG_KEY, Sub(totalOngAmount, ongAmountToBeSub))
+        # update real time running vault
+        Put(GetContext(), realTimeRunVaultKey, Sub(realTimeRunVault, ongAmountToBeSub))
     else:
         # update total ong amount
         Put(GetContext(), TOTAL_ONG_KEY, Add(totalOngAmount, ongAmount))
