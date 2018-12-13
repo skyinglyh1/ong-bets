@@ -144,9 +144,15 @@ def Main(operation, args):
     if operation == "getCurrentRound":
         return getCurrentRound()
     if operation == "getDividendForBankersPercentage":
-        return getDividendForBankersPercentage()
+        if len(args) != 1:
+            return False
+        roundNumber = args[0]
+        return getDividendForBankersPercentage(roundNumber)
     if operation == "getRunningVaultPercentage":
-        return getRunningVaultPercentage()
+        if len(args) != 1:
+            return False
+        roundNumber = args[0]
+        return getRunningVaultPercentage(roundNumber)
     if operation == "getTotalONG":
         return getTotalONG()
     if operation == "getCommission":
@@ -246,9 +252,11 @@ def init():
 def setParameters(dividendForBankersPercentage, runningVaultPercentage):
     RequireWitness(Admin)
 
-    Put(GetContext(), DIVIDEND_FOR_BANKERS_PERCENTAGE, dividendForBankersPercentage)
-    Put(GetContext(), RUNNING_VAULT_PERCENTAGE, runningVaultPercentage)
-    Notify(["setParameters", dividendForBankersPercentage, runningVaultPercentage])
+    currentRound = getCurrentRound()
+    nextRound = Add(currentRound, 1)
+    Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, nextRound), DIVIDEND_FOR_BANKERS_PERCENTAGE), dividendForBankersPercentage)
+    Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, nextRound), RUNNING_VAULT_PERCENTAGE), runningVaultPercentage)
+    Notify(["setParameters", nextRound, dividendForBankersPercentage, runningVaultPercentage])
     return True
 
 def startNewRound(ongAmount):
@@ -260,7 +268,10 @@ def startNewRound(ongAmount):
             # Please wait for the current round to be ended.
             Notify(["startNewRound", 99])
             return False
-
+        if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
+            # Please set the percentage parameters correctly before admin start new round
+            Notify(["startNewRoundErr", 100])
+            return False
     Put(GetContext(), CURRENT_ROUND_KEY, newRound)
 
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
@@ -337,15 +348,15 @@ def bankerInvest(account, ongAmount):
         bankersListInfo = Serialize(bankersList)
         Put(GetContext(), bankersListKey, bankersListInfo)
 
-    dividendForBankersPercentage = getDividendForBankersPercentage()
-    runningVaultPercentage = getRunningVaultPercentage()
+    dividendForBankersPercentage = getDividendForBankersPercentage(currentRound)
+    runningVaultPercentage = getRunningVaultPercentage(currentRound)
 
     # add dividend to all the bankers, 48%
     dividend = Div(Mul(ongAmount, dividendForBankersPercentage), 100)
 
     # update profit per investment for bankers
     bankersInvestment = getBankersInvestment(currentRound)
-    if bankersInvestment != 0:
+    if bankersInvestment > 0:
         profitPerInvestmentForBankersToBeAdd = Div(Mul(dividend, MagnitudeForProfitPerSth), bankersInvestment)
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY), Add(profitPerInvestmentForBankersToBeAdd, getProfitPerInvestmentForBankers(currentRound)))
     else:
@@ -618,11 +629,11 @@ def bet(account, ongAmount, number):
 def getCurrentRound():
     return Get(GetContext(), CURRENT_ROUND_KEY)
 
-def getDividendForBankersPercentage():
-    return Get(GetContext(), DIVIDEND_FOR_BANKERS_PERCENTAGE)
+def getDividendForBankersPercentage(roundNumber):
+    return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), DIVIDEND_FOR_BANKERS_PERCENTAGE))
 
-def getRunningVaultPercentage():
-    return Get(GetContext(), RUNNING_VAULT_PERCENTAGE)
+def getRunningVaultPercentage(roundNumber):
+    return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), RUNNING_VAULT_PERCENTAGE))
 
 def getTotalONG():
     return Get(GetContext(), TOTAL_ONG_KEY)
@@ -733,10 +744,11 @@ def _getBankerDividend(account):
         if unsharedProfitPerInvestmentForBanker != 0 and bankerInvestment != 0:
             unsharedProfit = Mul(unsharedProfitPerInvestmentForBanker, bankerInvestment)
             unsharedProfitOngAmount = Add(unsharedProfit, unsharedProfitOngAmount)
-
+            Notify(["11_getBankerDividend", lastTimeUpdateDividendRound, unsharedProfit, unsharedProfitOngAmount])
         lastTimeUpdateDividendRound = Add(lastTimeUpdateDividendRound, 1)
 
     unsharedProfitOngAmount = Div(unsharedProfitOngAmount, MagnitudeForProfitPerSth)
+    Notify(["_getBankerDividend", dividendInStorage, unsharedProfitOngAmount])
     return [Add(dividendInStorage, unsharedProfitOngAmount), Sub(lastTimeUpdateDividendRound, 1)]
 
 def checkInBankerList(account, bankersList):
@@ -749,24 +761,29 @@ def updateBankerDividend(account):
     currentRound = getCurrentRound()
     profitPerInvestmentForBankers = getProfitPerInvestmentForBankers(currentRound)
     profitPerInvestmentForBankerFromKey = concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY, account))
-    Put(GetContext(), profitPerInvestmentForBankerFromKey, profitPerInvestmentForBankers)
+
     res = _getBankerDividend(account)
     dividend = res[0]
     lastTimeUpdateDividendRound = res[1]
-    Put(GetContext(), concatKey(BANKER_DIVIDEND_BALANCE_PREFIX, account), dividend)
-    Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY, account), lastTimeUpdateDividendRound)
+    Notify(["updateBankerDividend", dividend, lastTimeUpdateDividendRound])
+    if dividend > 0 and lastTimeUpdateDividendRound == currentRound:
+        Put(GetContext(), concatKey(BANKER_DIVIDEND_BALANCE_PREFIX, account), dividend)
+        Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY, account), lastTimeUpdateDividendRound)
+        Put(GetContext(), profitPerInvestmentForBankerFromKey, profitPerInvestmentForBankers)
     return True
 
 def updateBankerEarning(account):
     currentRound = getCurrentRound()
     profitPerRunVaultShare = getProfitPerRunningVaultShare(currentRound)
     profitPerRunVaultShareFromKey = concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY, account))
-    Put(GetContext(), profitPerRunVaultShareFromKey, profitPerRunVaultShare)
+
     res = _getBankerEarning(account)
     earning = res[0]
     lastTimeUpdateEarnRound = res[1]
-    Put(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account), earning)
-    Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY, account), lastTimeUpdateEarnRound)
+    if earning > 0 and lastTimeUpdateEarnRound == currentRound:
+        Put(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account), earning)
+        Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY, account), lastTimeUpdateEarnRound)
+        Put(GetContext(), profitPerRunVaultShareFromKey, profitPerRunVaultShare)
     return True
 
 
