@@ -7,7 +7,7 @@
 
 若R小于number，则用户获胜，可获得```98 * ongAmount / (number - 1)```数量的ONG，函数执行成功后，用户已获得对应的ONG，无需提现。
 
-否则用户输掉他的钱，用户的ongAmount数量的ONG保留在合约内部(作为合约管理员的收益)。
+否则用户输掉他的钱，用户的ongAmount数量的ONG保留在合约内部(作为本轮游戏所有庄家的收益)。
 
 ```angular2html
 account -- 玩家的帐户地址
