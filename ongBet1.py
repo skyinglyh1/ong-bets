@@ -376,7 +376,7 @@ def bankerInvest(account, ongAmount):
 def bankerWithdrawDividend(account):
     # RequireWitness(account)
     if CheckWitness(account) == False:
-        # "bankerWithdrawDividend: Check witness failed!",
+        # bankerWithdrawDividend: Check witness failed!,
         Notify(["Error", 201])
         return False
 
@@ -425,8 +425,8 @@ def bankerWithdrawEarning(account):
     # Require(_transferONGFromContact(account, bankerEarning))
     res = _transferONGFromContact(account, bankerEarning)
     if res == False:
-        # Transfer ONG failed!
-        Notify(["Error", 304])
+        # bankerWithdrawEarning: Transfer ONG failed!
+        Notify(["Error", 302])
         return False
 
     Delete(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account))
@@ -445,12 +445,15 @@ def bankerWithdraw(account):
 
 def bankerWithdrawBeforeExit(account):
     if CheckWitness(account) == False:
-        # "Check witness failed!",
-        Notify(["Error", 501])
+        # bankerWithdrawBeforeExit: Check witness failed!
+        Notify(["Error", 401])
         return False
 
     ongShareInRunningVault = getRunVaultShare(account)
-
+    if ongShareInRunningVault <= 0:
+        # bankerWithdrawBeforeExit: banker's dividend is not greater than 0
+        Notify(["noShare", account])
+        return True
     currentRound = getCurrentRound()
     bankerBalanceInRunVault = getBankerBalanceInRunVault(currentRound, account)
     if getRoundGameStatus(currentRound) == STATUS_ON and bankerBalanceInRunVault > 0:
@@ -466,14 +469,14 @@ def bankerWithdrawBeforeExit(account):
     # update real time run vault
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT), Sub(getRealTimeRunningVault(currentRound), ongShareInRunningVault))
 
-    Notify(["bankerWithdrawShareInRunVault", currentRound, account, ongShareInRunningVault])
+    Notify(["bankerWithdraw", currentRound, account, ongShareInRunningVault])
     return ongShareInRunningVault
 
 def bankerExit(account):
     # RequireWitness(account)
     if CheckWitness(account) == False:
-        # "Check witness failed!",
-        Notify(["Error", 401])
+        # bankerExit: Check witness failed!,
+        Notify(["Error", 501])
         return False
 
     currentRound = getCurrentRound()
@@ -497,7 +500,7 @@ def bankerExit(account):
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
         # update real time running vault
         Delete(GetContext(), realTimeRunVaultKey)
-        Notify(["GameEnd", currentRound])
+        Notify(["endCurrentRound", currentRound])
     return True
 ############### for Bankers to invoke End ##################
 ############### for players to invoke Begin ##################
@@ -510,8 +513,8 @@ def bet(account, ongAmount, number):
     """
     # RequireWitness(account)
     if CheckWitness(account) == False:
-        # "Check witness failed!",
-        Notify(["Error", 501])
+        # bet: Check witness failed!
+        Notify(["Error", 601])
         return False
 
     currentRound = getCurrentRound()
@@ -521,13 +524,13 @@ def bet(account, ongAmount, number):
     entryHash = GetEntryScriptHash()
     # Require(callerHash == entryHash)
     if callerHash != entryHash:
-        # Don't support bet method being invoked by another contract to prevent hacking
-        Notify(["Error", 502])
+        # bet: Don't support bet method being invoked by another contract to prevent hacking
+        Notify(["Error", 602])
         return False
 
     if getRoundGameStatus(currentRound) != STATUS_ON:
-        # current round game ended, please wait for the starting of the next round game and try later
-        Notify(["Error", 503])
+        # bet: Current round game ended, please wait for the starting of the next round game and try later
+        Notify(["Error", 603])
         return False
 
     # make sure the contract has enough ong to pay to accont if account wins
@@ -537,26 +540,26 @@ def bet(account, ongAmount, number):
 
     # # Require(realTimeRunVault > tryPayOutToWin)
     if realTimeRunVault < Sub(tryPayOutToWin, ongAmount):
-        # the running pot/vault does not have enough asset to pay to the player, please try smaller bet
-        Notify(["Error", 504])
+        # bet: Running pot/vault does not have enough asset to pay to the player, please try smaller bet
+        Notify(["Error", 604])
         return False
 
     # Require(_transferONG(account, ContractAddress, ongAmount))
     res = _transferONG(account, ContractAddress, ongAmount)
     if res == False:
-        # Transfer ONG failed, please try later or again
-        Notify(["Error", 505])
+        # bet: Transfer ONG failed, please try later or again
+        Notify(["Error", 605])
         return False
 
     # Require(number < 97)
     if number >=97:
-        # please try to bet with a number less than 97
-        Notify(["Error", 506])
+        # bet: Please try to bet with a number less than 97
+        Notify(["Error", 606])
         return False
     # Require(number > 1)
     if number <=1 :
-        # please try to bet with a number greater than 1
-        Notify(["Error", 507])
+        # bet: Please try to bet with a number greater than 1
+        Notify(["Error", 607])
         return False
 
     theNumber = _rollANumber()
@@ -564,10 +567,7 @@ def bet(account, ongAmount, number):
     if theNumber < number:
         payOutToWin = tryPayOutToWin
         Require(_transferONGFromContact(account, payOutToWin))
-        # if res == False:
-        #     # if the current realtime run vault is small, player's bet will be invalid but can help mark this round game as end
-        #     Notify(["Error", 508])
-        #     return False
+
         # update total ongAmount
         ongAmountToBeSub = Sub(payOutToWin, ongAmount)
         Put(GetContext(), TOTAL_ONG_KEY, Sub(totalOngAmount, ongAmountToBeSub))
@@ -584,9 +584,8 @@ def bet(account, ongAmount, number):
             Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
             # update real time running vault
             Delete(GetContext(), realTimeRunVaultKey)
-            Notify(["GameEnd", currentRound])
+            Notify(["endCurrentRound", currentRound])
             return True
-
     else:
         # update total ong amount
         Put(GetContext(), TOTAL_ONG_KEY, Add(totalOngAmount, ongAmount))
