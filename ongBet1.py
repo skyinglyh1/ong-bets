@@ -172,10 +172,11 @@ def Main(operation, args):
         roundNumber = args[0]
         return getRealTimeRunningVault(roundNumber)
     if operation == "getBankersList":
-        if len(args) != 1:
+        if len(args) != 2:
             return False
         roundNumber = args[0]
-        return getBankersList(roundNumber)
+        includeExitBankers = args[1]
+        return getBankersList(roundNumber, includeExitBankers)
     ############### for all to pre-invoke End ##################
     ############### for bankers to pre-invoke Begin ##################
     if operation == "getBankerInvestment":
@@ -634,13 +635,21 @@ def getRunningVault(roundNumber):
 def getRealTimeRunningVault(roundNumber):
     return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), REAL_TIME_RUNNING_VAULT))
 
-def getBankersList(roundNumber):
+def getBankersList(roundNumber, includeExitBankers):
     bankersListKey = concatKey(concatKey(ROUND_PREFIX, roundNumber), BANKERS_LIST_KEY)
     bankersListInfo = Get(GetContext(), bankersListKey)
     bankersList = []
     if bankersListInfo:
         bankersList = Deserialize(bankersListInfo)
-    return bankersList
+
+    if includeExitBankers == True:
+        return bankersList
+
+    effectiveBankerList = []
+    for banker in bankersList:
+        if getBankerBalanceInRunVault(roundNumber, banker):
+            effectiveBankerList.append(banker)
+    return effectiveBankerList
 ############### for all to pre-invoke End ##################
 ############### for bankers to pre-invoke Begin ##################
 def getBankerInvestment(roundNumber, account):
