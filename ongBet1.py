@@ -1,10 +1,11 @@
 from boa.interop.Ontology.Contract import Migrate
 from boa.interop.System.Storage import GetContext, Get, Put, Delete
 from boa.interop.System.Runtime import CheckWitness, GetTime, Notify, Serialize, Deserialize
-from boa.interop.System.ExecutionEngine import GetExecutingScriptHash, GetCallingScriptHash, GetEntryScriptHash
+from boa.interop.System.ExecutionEngine import GetExecutingScriptHash, GetCallingScriptHash, GetEntryScriptHash, GetScriptContainer
 from boa.interop.Ontology.Native import Invoke
 from boa.interop.Ontology.Runtime import GetCurrentBlockHash
 from boa.builtins import ToScriptHash, concat, state
+from boa.interop.System.Transaction import GetTransactionHash
 
 # the script hash of this contract
 ContractAddress = GetExecutingScriptHash()
@@ -222,6 +223,8 @@ def Main(operation, args):
             return False
         account = args[0]
         return getBankersLastTimeUpdateEarnRound(account)
+    if operation == "_rollANumber":
+        return _rollANumber()
     return False
 
 ############### for Admin to invoke Begin ##################
@@ -508,7 +511,7 @@ def bet(account, ongAmount, number):
     # RequireWitness(account)
     if CheckWitness(account) == False:
         # "Check witness failed!",
-        Notify(["BetErr", 501])
+        Notify(["Error", 501])
         return False
 
     currentRound = getCurrentRound()
@@ -533,8 +536,8 @@ def bet(account, ongAmount, number):
     realTimeRunVault = getRealTimeRunningVault(currentRound)
 
     # # Require(realTimeRunVault > tryPayOutToWin)
-    if realTimeRunVault < tryPayOutToWin:
-        # the contract does not have enough asset to pay to the player, please try smaller bet
+    if realTimeRunVault < Sub(tryPayOutToWin, ongAmount):
+        # the running pot/vault does not have enough asset to pay to the player, please try smaller bet
         Notify(["Error", 504])
         return False
 
@@ -559,11 +562,21 @@ def bet(account, ongAmount, number):
     theNumber = _rollANumber()
     payOutToWin = 0
     if theNumber < number:
+        payOutToWin = tryPayOutToWin
+        Require(_transferONGFromContact(account, payOutToWin))
+        # if res == False:
+        #     # if the current realtime run vault is small, player's bet will be invalid but can help mark this round game as end
+        #     Notify(["Error", 508])
+        #     return False
+        # update total ongAmount
+        ongAmountToBeSub = Sub(payOutToWin, ongAmount)
+        Put(GetContext(), TOTAL_ONG_KEY, Sub(totalOngAmount, ongAmountToBeSub))
+        # update real time running vault
         realTimeRunVaultKey = concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT)
+        Put(GetContext(), realTimeRunVaultKey, Sub(realTimeRunVault, ongAmountToBeSub))
         realTimeRunVault = getRealTimeRunningVault(currentRound)
         # mark the game as end if real time running vault is less than 1/10 of running vault
-        if realTimeRunVault < Div(getIncreasingRunnVault(currentRound), 10):
-            Require(_transferONGFromContact(account, ongAmount))
+        if realTimeRunVault <= Div(getIncreasingRunnVault(currentRound), 10):
             # mark this round of game end
             Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), ROUND_STATUS), STATUS_OFF)
             # update profit per investment for bankers
@@ -573,23 +586,12 @@ def bet(account, ongAmount, number):
             Delete(GetContext(), realTimeRunVaultKey)
             Notify(["GameEnd", currentRound])
             return True
-        payOutToWin = tryPayOutToWin
-        res = _transferONGFromContact(account, payOutToWin)
-        if res == False:
-            # if the current realtime run vault is small, player's bet will be invalid but can help mark this round game as end
-            Notify(["Error", 508])
-            return False
-        # update total ongAmount
-        ongAmountToBeSub = Sub(payOutToWin, ongAmount)
-        Put(GetContext(), TOTAL_ONG_KEY, Sub(totalOngAmount, ongAmountToBeSub))
-        # update real time running vault
-        Put(GetContext(), realTimeRunVaultKey, Sub(realTimeRunVault, ongAmountToBeSub))
+
     else:
         # update total ong amount
         Put(GetContext(), TOTAL_ONG_KEY, Add(totalOngAmount, ongAmount))
 
         # update profit per investment for bankers
-
         profitPerRunNingVaultShareToBeAdd = Div(Mul(ongAmount, MagnitudeForProfitPerSth), getRunningVault(currentRound))
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRunNingVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
 
@@ -762,8 +764,9 @@ def _calculatePayOutToWin(ongAmount, number):
 
 def _rollANumber():
     blockHash = GetCurrentBlockHash()
-
-    theNumber = abs(blockHash) % 100
+    tx = GetScriptContainer()
+    txhash = GetTransactionHash(tx)
+    theNumber = abs(blockHash ^ txhash) % 100
     theNumber = Add(abs(theNumber), 1)
     return theNumber
 
