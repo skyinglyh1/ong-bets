@@ -293,7 +293,6 @@ def bankerInvest(account, ongAmount):
             setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
         Put(GetContext(), CURRENT_ROUND_KEY, newRound)
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
-        Require(_bankerInvest(account, ongAmount))
         Notify(["startNewRound", newRound])
 
     _bankerInvest(account, ongAmount)
