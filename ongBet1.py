@@ -71,12 +71,12 @@ def Main(operation, args):
         dividendForBankersPercentage = args[0]
         runningVaultPercentage = args[1]
         return setParameters(dividendForBankersPercentage, runningVaultPercentage)
-    if operation == "startNewRound":
-        if len(args) != 2:
-            return False
-        account = args[0]
-        ongAmount = args[1]
-        return startNewRound(account, ongAmount)
+    # if operation == "startNewRound":
+    #     if len(args) != 2:
+    #         return False
+    #     account = args[0]
+    #     ongAmount = args[1]
+    #     return startNewRound(account, ongAmount)
     if operation == "withdrawCommission":
         return withdrawCommission()
     if operation == "migrateContract":
@@ -241,6 +241,7 @@ def init():
         return False
     else:
         Put(GetContext(), INITIALIZED, 'Y')
+        Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, 0), ROUND_STATUS), STATUS_OFF)
         setParameters(48, 50)
         Notify(["Initialized contract successfully!"])
     return True
@@ -255,20 +256,21 @@ def setParameters(dividendForBankersPercentage, runningVaultPercentage):
     Notify(["setParameters", nextRound, dividendForBankersPercentage, runningVaultPercentage])
     return True
 
-def startNewRound(account, ongAmount):
-    currentRound = getCurrentRound()
-    newRound = Add(currentRound, 1)
-    if not currentRound:
-        RequireWitness(Admin)
-    else:
-        RequireWitness(account)
-    if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
-        setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
-    Put(GetContext(), CURRENT_ROUND_KEY, newRound)
-    Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
-    Require(bankerInvest(account, ongAmount))
-    Notify(["startNewRound", newRound])
-    return True
+# def startNewRound(account, ongAmount):
+#     currentRound = getCurrentRound()
+#     newRound = Add(currentRound, 1)
+#     if not currentRound:
+#         RequireWitness(Admin)
+#     else:
+#         RequireWitness(account)
+#         Require(getRoundGameStatus(currentRound) == STATUS_OFF)
+#     if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
+#         setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
+#     Put(GetContext(), CURRENT_ROUND_KEY, newRound)
+#     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
+#     Require(bankerInvest(account, ongAmount))
+#     Notify(["startNewRound", newRound])
+#     return True
 
 
 def withdrawCommission():
@@ -311,7 +313,19 @@ def bankerInvest(account, ongAmount):
 
     # Require(getRoundGameStatus(currentRound) == STATUS_ON)
     if getRoundGameStatus(currentRound) == STATUS_OFF:
-        startNewRound(account, ongAmount)
+        # startNewRound(account, ongAmount)
+        newRound = Add(currentRound, 1)
+        if currentRound == 0:
+            RequireWitness(Admin)
+        else:
+            RequireWitness(account)
+            # Require(getRoundGameStatus(currentRound) == STATUS_OFF)
+        if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
+            setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
+        Put(GetContext(), CURRENT_ROUND_KEY, newRound)
+        Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
+        Require(bankerInvest(account, ongAmount))
+        Notify(["startNewRound", newRound])
         return True
 
     # Require(_transferONG(account, ContractAddress, ongAmount))
@@ -501,7 +515,10 @@ def bankerExit(account):
         # mark this round of game end
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), ROUND_STATUS), STATUS_OFF)
         # update profit per investment for bankers
-        profitPerRuningVaultShareToBeAdd = Div(Mul(realTimeRunVault, MagnitudeForProfitPerSth), getRunningVault(currentRound))
+        runVaultLeft = getRunningVault(currentRound)
+        profitPerRuningVaultShareToBeAdd = 0
+        if runVaultLeft > 0:
+            profitPerRuningVaultShareToBeAdd = Div(Mul(realTimeRunVault, MagnitudeForProfitPerSth), runVaultLeft)
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
         # update real time running vault
         Delete(GetContext(), realTimeRunVaultKey)
