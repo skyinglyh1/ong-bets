@@ -103,4 +103,6 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 ```getBankerDividend(account)``` -- 查看account庄家的分红收益。
 ###### 4.14 getBankerEarning()
 ```getBankerEarning(account)``` -- 查看account庄家的游戏运营收益。
+###### 4.14 getRunVaultShare()
+```getRunVaultShare(account)``` -- 查看account庄家在当前轮下享有的RunVault份额。
 
