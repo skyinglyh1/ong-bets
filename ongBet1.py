@@ -236,7 +236,7 @@ def init():
         Notify(["idiot admin, you have initialized the contract"])
         return False
     else:
-        Put(GetContext(), INITIALIZED, 1)
+        Put(GetContext(), INITIALIZED, 'Y')
         setParameters(48, 50)
         Notify(["Initialized contract successfully"])
     return True
@@ -266,7 +266,8 @@ def startNewRound(ongAmount):
     Put(GetContext(), CURRENT_ROUND_KEY, newRound)
 
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
-    bankerInvest(Admin, ongAmount)
+    Require(bankerInvest(Admin, ongAmount))
+
 
     Notify(["startNewRound", newRound])
     return True
@@ -412,7 +413,7 @@ def bankerWithdrawDividend(account):
     # update the total ong amount
     Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), bankerDividend))
 
-    Notify(["bankerWithdrawDividend", account, bankerDividend])
+    Notify(["bankerWithdrawDividend", getCurrentRound(), account, bankerDividend])
     return bankerDividend
 
 
@@ -445,7 +446,7 @@ def bankerWithdrawEarning(account):
     # update the total ong amount
     Put(GetContext(), TOTAL_ONG_KEY, Sub(getTotalONG(), bankerEarning))
 
-    Notify(["bankerWithdrawEarning", account, bankerEarning])
+    Notify(["bankerWithdrawEarning", getCurrentRound(), account, bankerEarning])
     return bankerEarning
 
 
@@ -483,7 +484,7 @@ def bankerWithdrawBeforeExit(account):
     # update real time run vault
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT), Sub(getRealTimeRunningVault(currentRound), ongShareInRunningVault))
 
-    Notify(["bankerWithdrawShareInRunVault", account, currentRound, ongShareInRunningVault])
+    Notify(["bankerWithdrawShareInRunVault", currentRound, account, ongShareInRunningVault])
     return ongShareInRunningVault
 
 def bankerExit(account):
@@ -551,7 +552,6 @@ def bet(account, ongAmount, number):
         Notify(["BetErr", 504])
         return False
 
-
     # Require(number < 97)
     if number >=97:
         # please try to bet with a number less than 97
@@ -577,12 +577,12 @@ def bet(account, ongAmount, number):
             Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRunNingVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
             # update real time running vault
             Delete(GetContext(), realTimeRunVaultKey)
-            Notify(["GameEnd!", currentRound])
+            Notify(["GameEnd", currentRound])
             return False
         payOutToWin = tryPayOutToWin
         res = _transferONGFromContact(account, payOutToWin)
         if res == False:
-            # if the current realtime run vault is small, player will help mark this round game as end
+            # if the current realtime run vault is small, player's bet will be invalid but can help mark this round game as end
             Notify(["BetErr", 507])
             return False
         # update total ongAmount
@@ -731,11 +731,12 @@ def updateBankerDividend(account):
     currentRound = getCurrentRound()
     profitPerInvestmentForBankers = getProfitPerInvestmentForBankers(currentRound)
     profitPerInvestmentForBankerFromKey = concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY, account))
-
+    profitPerInvestmentForBankerFrom = Get(GetContext(), profitPerInvestmentForBankerFromKey)
+    profitPerInvestment = Sub(profitPerInvestmentForBankers, profitPerInvestmentForBankerFrom)
     res = _getBankerDividend(account)
     dividend = res[0]
     lastTimeUpdateDividendRound = res[1]
-    if dividend > 0 and lastTimeUpdateDividendRound == currentRound:
+    if profitPerInvestment > 0 or lastTimeUpdateDividendRound != currentRound:
         Put(GetContext(), concatKey(BANKER_DIVIDEND_BALANCE_PREFIX, account), dividend)
         Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY, account), lastTimeUpdateDividendRound)
         Put(GetContext(), profitPerInvestmentForBankerFromKey, profitPerInvestmentForBankers)
@@ -745,11 +746,12 @@ def updateBankerEarning(account):
     currentRound = getCurrentRound()
     profitPerRunVaultShare = getProfitPerRunningVaultShare(currentRound)
     profitPerRunVaultShareFromKey = concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY, account))
-
+    profitPerRunVaultShareFrom = Get(GetContext(), profitPerRunVaultShareFromKey)
+    profitPerRunVaultShare = Sub(profitPerRunVaultShare, profitPerRunVaultShareFrom)
     res = _getBankerEarning(account)
     earning = res[0]
     lastTimeUpdateEarnRound = res[1]
-    if earning > 0 and lastTimeUpdateEarnRound == currentRound:
+    if profitPerRunVaultShare > 0 or lastTimeUpdateEarnRound != currentRound:
         Put(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account), earning)
         Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY, account), lastTimeUpdateEarnRound)
         Put(GetContext(), profitPerRunVaultShareFromKey, profitPerRunVaultShare)
