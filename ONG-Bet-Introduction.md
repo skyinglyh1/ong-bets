@@ -90,7 +90,8 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 ###### 4.9 getRealTimeRunningVault()
 ```getRealTimeRunningVault(roundNumber)``` -- 查看第roundNumber轮的游戏内总资金池内用于游戏运营的总投入的实时余额。
 ###### 4.10 getBankersList()
-```getBankersList(roundNumber)``` -- 查看第roundNumber轮的游戏内的所有庄家，返回一下list，每个元素为帐户地址。
+```getBankersList(roundNumber，includeExitBankers)``` -- 查看第roundNumber轮的游戏内的所有庄家，返回一下list，每个元素为帐户地址。
+当includeExitBankers为True时，返回roundNumber轮的所有庄家；当includeExitBankers为False时，返回roundNumber的当前有效庄家(无效庄家即为已退出庄家)。
 
 
 
