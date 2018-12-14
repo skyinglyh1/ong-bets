@@ -71,7 +71,7 @@ def Main(operation, args):
         runningVaultPercentage = args[1]
         return setParameters(dividendForBankersPercentage, runningVaultPercentage)
     if operation == "startNewRound":
-        if len(args) != 1:
+        if len(args) != 2:
             return False
         account = args[0]
         ongAmount = args[1]
