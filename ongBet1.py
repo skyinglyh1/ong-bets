@@ -184,6 +184,12 @@ def Main(operation, args):
         roundNumber = args[0]
         account = args[1]
         return getBankerInvestment(roundNumber, account)
+    if operation == "getBankerBalanceInRunVault":
+        if len(args) != 2:
+            return False
+        roundNumber = args[0]
+        account = args[1]
+        return getBankerBalanceInRunVault(roundNumber, account)
     if operation == "getBankerDividend":
         if len(args) != 1:
             return False
@@ -199,8 +205,6 @@ def Main(operation, args):
             return False
         account = args[0]
         return getRunVaultShare(account)
-
-
     ############### for bankers to pre-invoke End ##################
     # for test usage
     if operation == "getProfitPerInvestmentForBankers":
