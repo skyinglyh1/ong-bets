@@ -296,7 +296,7 @@ def bankerInvest(account, ongAmount):
     """
     # RequireWitness(account)
     if CheckWitness(account) == False:
-        # "bankerInvest Check witness failed!",
+        # "bankerInvest: Check witness failed!",
         Notify(["Error", 101])
         return False
     currentRound = getCurrentRound()
@@ -309,7 +309,7 @@ def bankerInvest(account, ongAmount):
     # Require(_transferONG(account, ContractAddress, ongAmount))
     res = _transferONG(account, ContractAddress, ongAmount)
     if res == False:
-        # Transfer ONG to contract failed!
+        # bankerInvest: Transfer ONG to contract failed!
         Notify(["Error", 102])
         return False
     # try to update banker list
@@ -373,7 +373,7 @@ def bankerInvest(account, ongAmount):
 def bankerWithdrawDividend(account):
     # RequireWitness(account)
     if CheckWitness(account) == False:
-        # "Check witness failed!",
+        # "bankerWithdrawDividend: Check witness failed!",
         Notify(["Error", 201])
         return False
 
@@ -383,14 +383,14 @@ def bankerWithdrawDividend(account):
     bankerDividend = getBankerDividend(account)
     # Require(bankerDividend > 0)
     if bankerDividend <= 0:
-        # banker has no dividend
+        # bankerWithdrawDividend: Banker has no dividend
         Notify(["noDividend", account])
         return True
 
     # Require(_transferONGFromContact(account, bankerDividend))
     res = _transferONGFromContact(account, bankerDividend)
     if res == False:
-        # Transfer dividend to banker failed!
+        # bankerWithdrawDividend: Transfer dividend to banker failed!
         Notify(["Error", 202])
         return False
 
@@ -405,7 +405,7 @@ def bankerWithdrawDividend(account):
 def bankerWithdrawEarning(account):
     # RequireWitness(account)
     if CheckWitness(account) == False:
-        # "Check witness failed!",
+        # bankerWithdrawEarning: Check witness failed!,
         Notify(["Error", 301])
         return False
 
@@ -698,7 +698,7 @@ def getBankerEarning(account):
             unsharedProfitOngAmount = Add(unsharedProfitOngAmount, unsharedProfit)
         lastTimeUpdateEarnRound = Add(lastTimeUpdateEarnRound, 1)
     unsharedProfitOngAmount = Div(unsharedProfitOngAmount, MagnitudeForProfitPerSth)
-    return [Add(earningInStorage, unsharedProfitOngAmount), Sub(lastTimeUpdateEarnRound, 1)]
+    return Add(earningInStorage, unsharedProfitOngAmount)
 
 
 def getBankerDividend(account):
