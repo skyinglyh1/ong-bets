@@ -73,8 +73,9 @@ def Main(operation, args):
     if operation == "startNewRound":
         if len(args) != 1:
             return False
-        ongAmount = args[0]
-        return startNewRound(ongAmount)
+        account = args[0]
+        ongAmount = args[1]
+        return startNewRound(ongAmount, ongAmount)
     if operation == "withdrawCommission":
         return withdrawCommission()
     if operation == "migrateContract":
