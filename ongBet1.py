@@ -282,7 +282,6 @@ def bankerInvest(account, ongAmount):
     :param account:
     :return:
     """
-    RequireWitness(account)
     currentRound = getCurrentRound()
     if getRoundGameStatus(currentRound) == STATUS_OFF:
         newRound = Add(currentRound, 1)
