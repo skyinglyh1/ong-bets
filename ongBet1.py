@@ -285,7 +285,6 @@ def bankerInvest(account, ongAmount):
     RequireWitness(account)
     currentRound = getCurrentRound()
     if getRoundGameStatus(currentRound) == STATUS_OFF:
-        # startNewRound(account, ongAmount)
         newRound = Add(currentRound, 1)
         if currentRound == 0:
             RequireWitness(Admin)
