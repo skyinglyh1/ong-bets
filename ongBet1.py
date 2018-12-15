@@ -54,7 +54,7 @@ BANKER_DIVIDEND_BALANCE_PREFIX = "U06"
 BANKER_EARNING_BALANCE_PREFIX = "U07"
 # # BANKER_WITHDRAWN_BALANCE_KEY + account -- store the account's withdrawn amount of ong
 # BANKER_WITHDRAWN_BALANCE_KEY = "U09"
-
+bankerQuota = 1000000000000
 
 STATUS_ON = "RUNNING"
 STATUS_OFF = "END"
@@ -306,6 +306,10 @@ def _bankerInvest(account, ongAmount):
         # "bankerInvest: Check witness failed!",
         Notify(["Error", 101])
         return False
+    if ongAmount < bankerQuota:
+        # bankerInvest: Please make sure you invest at least 1000 ONG to become a banker
+        Notify(["Error", 103])
+        return False
     # Require(_transferONG(account, ContractAddress, ongAmount))
     res = _transferONG(account, ContractAddress, ongAmount)
     if res == False:
@@ -375,7 +379,7 @@ def bankerWithdrawDividend(account):
     if CheckWitness(account) == False:
         # bankerWithdrawDividend: Check witness failed!,
         Notify(["Error", 201])
-        return False
+        return 0
 
     # update the banker's dividend
     updateBankerDividend(account)
@@ -385,14 +389,14 @@ def bankerWithdrawDividend(account):
     if bankerDividend <= 0:
         # bankerWithdrawDividend: Banker has no dividend
         Notify(["noDividend", account])
-        return True
+        return 0
 
     # Require(_transferONGFromContact(account, bankerDividend))
     res = _transferONGFromContact(account, bankerDividend)
     if res == False:
         # bankerWithdrawDividend: Transfer dividend to banker failed!
         Notify(["Error", 202])
-        return False
+        return 0
 
     Delete(GetContext(), concatKey(BANKER_DIVIDEND_BALANCE_PREFIX, account))
     # update the total ong amount
@@ -407,7 +411,7 @@ def bankerWithdrawEarning(account):
     if CheckWitness(account) == False:
         # bankerWithdrawEarning: Check witness failed!,
         Notify(["Error", 301])
-        return False
+        return 0
 
     updateBankerEarning(account)
     # update the banker's earning
@@ -417,14 +421,14 @@ def bankerWithdrawEarning(account):
     if bankerEarning <= 0:
         # banker's dividend is not greater than 0
         Notify(["noEarning", account])
-        return True
+        return 0
 
     # Require(_transferONGFromContact(account, bankerEarning))
     res = _transferONGFromContact(account, bankerEarning)
     if res == False:
         # bankerWithdrawEarning: Transfer ONG failed!
         Notify(["Error", 302])
-        return False
+        return 0
 
     Delete(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account))
 
@@ -444,13 +448,13 @@ def bankerWithdrawBeforeExit(account):
     if CheckWitness(account) == False:
         # bankerWithdrawBeforeExit: Check witness failed!
         Notify(["Error", 401])
-        return False
+        return 0
 
     ongShareInRunningVault = getRunVaultShare(account)
     if ongShareInRunningVault <= 0:
         # bankerWithdrawBeforeExit: banker's dividend is not greater than 0
         Notify(["noShare", account])
-        return True
+        return 0
     currentRound = getCurrentRound()
     bankerBalanceInRunVault = getBankerBalanceInRunVault(currentRound, account)
     if getRoundGameStatus(currentRound) == STATUS_ON and bankerBalanceInRunVault > 0:
@@ -483,8 +487,12 @@ def bankerExit(account):
 
     ongShareInRunningVault = bankerWithdrawBeforeExit(account)
 
-    Notify(["bankerExit", currentRound, account, Add(dividend_earning, ongShareInRunningVault)])
-
+    totalWithdrawOng = Add(dividend_earning, ongShareInRunningVault)
+    if totalWithdrawOng > 0:
+        Notify(["bankerExit", currentRound, account, Add(dividend_earning, ongShareInRunningVault)])
+    else:
+        # bankerExit: No longer a banker
+        Notify(["Error", 502])
 
     # mark the game as end if real time running vault is less than 1/10 of running vault
     realTimeRunVaultKey = concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT)
@@ -649,14 +657,6 @@ def getBankersList(roundNumber, includeExitBankers):
 ############### for bankers to pre-invoke Begin ##################
 def getBankerInvestment(roundNumber, account):
     return Get(GetContext(),concatKey(concatKey(ROUND_PREFIX, roundNumber), concatKey(BANKER_INVEST_BALANCE_PREFIX, account)))
-
-# def getBankerDividend(account):
-#     res = _getBankerDividend(account)
-#     return res[0]
-
-# def getBankerEarning(account):
-#     res = _getBankerEarning(account)
-#     return res[0]
 
 def getBankerBalanceInRunVault(roundNumber, account):
     bankerInvestment = getBankerInvestment(roundNumber, account)
