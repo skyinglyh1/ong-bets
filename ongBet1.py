@@ -489,10 +489,11 @@ def bankerExit(account):
 
     totalWithdrawOng = Add(dividend_earning, ongShareInRunningVault)
     if totalWithdrawOng > 0:
-        Notify(["bankerExit", currentRound, account, Add(dividend_earning, ongShareInRunningVault)])
+        Notify(["bankerExit", currentRound, account, totalWithdrawOng])
     else:
         # bankerExit: No longer a banker
         Notify(["Error", 502])
+        return True
 
     # mark the game as end if real time running vault is less than 1/10 of running vault
     realTimeRunVaultKey = concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT)
