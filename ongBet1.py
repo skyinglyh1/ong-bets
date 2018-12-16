@@ -280,7 +280,11 @@ def bankerInvest(account, ongAmount):
         else:
             RequireWitness(account)
         if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
-            setParameters(getDividendForBankersPercentage(currentRound), getRunningVaultPercentage(currentRound))
+            runVaultPercentage = getRunningVaultPercentage(currentRound)
+            dividendPercentage = getDividendForBankersPercentage(currentRound)
+            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), DIVIDEND_FOR_BANKERS_PERCENTAGE), dividendPercentage)
+            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), RUNNING_VAULT_PERCENTAGE), runVaultPercentage)
+            Notify(["setParameters", newRound, runVaultPercentage, dividendPercentage])
         Put(GetContext(), CURRENT_ROUND_KEY, newRound)
         Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, newRound), ROUND_STATUS), STATUS_ON)
         Notify(["startNewRound", newRound])
