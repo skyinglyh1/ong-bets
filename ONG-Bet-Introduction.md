@@ -23,7 +23,7 @@ number -- 玩家竞猜的数字，取值范围是2到96。(当产生的随机数
 
 ```bankerInvest(account, ongAmount)``` -- 任何人可通过投资该游戏成为庄家。
 ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄家作为之前庄家的分红收益，投资金额的50%将进入总资金池用于游戏运营。
-
+<!-- 
 ###### 2.2 bankerWithdrawDividend()
 
 ```bankerWithdrawDividend(account)``` -- 庄家将自己的分红收益从合约内向自己的帐户进行提现。
@@ -31,13 +31,13 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 ###### 2.3 bankerWithdrawEarning()
 
 ```bankerWithdrawEarning(account)``` -- 庄家将自己分额的游戏收益从合约内向自己的帐户进行提现。
-若本轮因总资金池的额度小于流入总资金池额度的10%，则本轮游戏结束，所有庄家对应的余额将会累计到自己分额的游戏收益中。
+若本轮因总资金池的额度小于流入总资金池额度的10%，则本轮游戏结束，所有庄家对应的余额将会累计到自己分额的游戏收益中。 -->
 
-###### 2.4 bankerWithdraw()
+###### 2.2 bankerWithdraw()
 
 ```bankerWithdraw(account)``` -- 庄家将分红收益和自己分额的游戏收益从合约内向自己的帐户进行统一提现。
 
-###### 2.5 bankerExit()
+###### 2.3 bankerExit()
 
 ```bankerExit(account)``` -- 庄家若想退出，可立即按庄家共投入的资金池占所有庄家投入的资金池比例从当前资金池的总量中提现退出。同时，
  庄家将分红收益和自己分额的游戏收益从合约内向自己的帐户进行统一提现。
@@ -51,10 +51,6 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 
 ```setParameters(dividendForBankersPercentage, runningVaultPercentage)``` -- 
 合约管理员设定庄家投资时的资金流向百分比，当前轮setParameters，则下轮生效，注意俩数之和应该为98。
-
-###### 3.3 startNewRound()
-
-```startNewRound(ongAmount)``` -- 合约管理员初始化新一轮游戏，同时传入合约管理员在本轮投资金额(以庄家的身份)。
 
 ###### 3.4 withdrawCommission()
 
@@ -97,14 +93,14 @@ ongAmount的2%将给项目方作为服务费，48%将按份额分给以前的庄
 
 
 ###### *** account(banker) 信息 ***
-###### 4.11 getBankerInvestment()
+###### 4.12 getBankerInvestment()
 ```getBankerInvestment(roundNumber, account)``` -- 查看第roundNumber轮的游戏内，account庄家的总投资额。
-###### 4.12 getBankerBalanceInRunVault()
+###### 4.13 getBankerBalanceInRunVault()
 ```getBankerBalanceInRunVault(roundNumber, account)``` -- 查看第roundNumber轮的游戏内，account庄家在总资金池(用于游戏运营)内的余额。
-###### 4.13 getBankerDividend()
+###### 4.14 getBankerDividend()
 ```getBankerDividend(account)``` -- 查看account庄家的分红收益。
-###### 4.14 getBankerEarning()
+###### 4.15 getBankerEarning()
 ```getBankerEarning(account)``` -- 查看account庄家的游戏运营收益。
-###### 4.14 getRunVaultShare()
+###### 4.16 getRunVaultShare()
 ```getRunVaultShare(account)``` -- 查看account庄家在当前轮下享有的RunVault份额。
 

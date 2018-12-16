@@ -31,8 +31,8 @@ RUNNING_VAULT_PERCENTAGE = "G05"
 BANKERS_LIST_KEY = "G06"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKERS_INVESTMENT_KEY -- total investment
 BANKERS_INVESTMENT_KEY = "G07"
-# ROUND_PREFIX + CURRENT_ROUND_KEY + INCREASING_RUNN_VAULT_KEY -- ong that has been added into the running vault
-INCREASING_RUNN_VAULT_KEY = "G08"
+# ROUND_PREFIX + CURRENT_ROUND_KEY + INCREASING_RUN_VAULT_KEY -- ong that has been added into the running vault
+INCREASING_RUN_VAULT_KEY = "G08"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + REAL_TIME_RUNNING_VAULT -- running vault except the earnings, ong that can be paid to the players
 REAL_TIME_RUNNING_VAULT = "G09"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY
@@ -93,16 +93,6 @@ def Main(operation, args):
         account = args[0]
         ongAmount = args[1]
         return bankerInvest(account, ongAmount)
-    if operation == "bankerWithdrawDividend":
-        if len(args) != 1:
-            return False
-        account = args[0]
-        return bankerWithdrawDividend(account)
-    if operation == "bankerWithdrawEarning":
-        if len(args) != 1:
-            return False
-        account = args[0]
-        return bankerWithdrawEarning(account)
     if operation == "bankerWithdraw":
         if len(args) != 1:
             return False
@@ -324,8 +314,8 @@ def _bankerInvest(account, ongAmount):
         bankersList = Deserialize(bankersListInfo)
         if not checkInBankerList(account, bankersList):
             bankersList.append(account)
-        bankersListInfo = Serialize(bankersList)
-        Put(GetContext(), bankersListKey, bankersListInfo)
+            bankersListInfo = Serialize(bankersList)
+            Put(GetContext(), bankersListKey, bankersListInfo)
     else:
         bankersList.append(account)
         bankersListInfo = Serialize(bankersList)
@@ -347,7 +337,7 @@ def _bankerInvest(account, ongAmount):
         dividend = 0
     # add running vault, 50%
     increasingRunVaultToBeAdd = Div(Mul(ongAmount, runningVaultPercentage), 100)
-    Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), INCREASING_RUNN_VAULT_KEY), Add(getIncreasingRunnVault(currentRound), increasingRunVaultToBeAdd))
+    Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), INCREASING_RUN_VAULT_KEY), Add(getIncreasingRunnVault(currentRound), increasingRunVaultToBeAdd))
 
     # update real time running vault
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT), Add(getRealTimeRunningVault(currentRound), increasingRunVaultToBeAdd))
@@ -357,8 +347,10 @@ def _bankerInvest(account, ongAmount):
     # update the commission fee
     Put(GetContext(), COMMISSION_KEY, Add(getCommission(), restOngAmount))
 
-    # update the account (or the banker) 's dividend
+    # update the account (or the banker) 's dividend and earning
     updateBankerDividend(account)
+    updateBankerEarning(account)
+
     # update account's investment
     bankerKey = concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(BANKER_INVEST_BALANCE_PREFIX, account))
     Put(GetContext(), bankerKey, Add(getBankerInvestment(currentRound, account), ongAmount))
@@ -381,7 +373,7 @@ def bankerWithdrawDividend(account):
         Notify(["Error", 201])
         return 0
 
-    # update the banker's dividend
+    # update the banker's dividend and earning
     updateBankerDividend(account)
 
     bankerDividend = getBankerDividend(account)
@@ -506,7 +498,7 @@ def bankerExit(account):
         profitPerRuningVaultShareToBeAdd = 0
         if runVaultLeft > 0:
             profitPerRuningVaultShareToBeAdd = Div(Mul(realTimeRunVault, MagnitudeForProfitPerSth), runVaultLeft)
-        Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
+            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
         # update real time running vault
         Delete(GetContext(), realTimeRunVaultKey)
         Notify(["endCurrentRound", currentRound])
@@ -589,8 +581,10 @@ def bet(account, ongAmount, number):
             # mark this round of game end
             Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), ROUND_STATUS), STATUS_OFF)
             # update profit per investment for bankers
-            profitPerRuningVaultShareToBeAdd = Div(Mul(realTimeRunVault, MagnitudeForProfitPerSth), getRunningVault(currentRound))
-            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
+            runVaultLeft = getRunningVault(currentRound)
+            if runVaultLeft > 0:
+                profitPerRuningVaultShareToBeAdd = Div(Mul(realTimeRunVault, MagnitudeForProfitPerSth), runVaultLeft)
+                Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRuningVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
             # update real time running vault
             Delete(GetContext(), realTimeRunVaultKey)
             Notify(["endCurrentRound", currentRound])
@@ -600,8 +594,10 @@ def bet(account, ongAmount, number):
         Put(GetContext(), TOTAL_ONG_KEY, Add(totalOngAmount, ongAmount))
 
         # update profit per investment for bankers
-        profitPerRunNingVaultShareToBeAdd = Div(Mul(ongAmount, MagnitudeForProfitPerSth), getRunningVault(currentRound))
-        Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRunNingVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
+        runVaultLeft = getRunningVault(currentRound)
+        if runVaultLeft > 0:
+            profitPerRunNingVaultShareToBeAdd = Div(Mul(ongAmount, MagnitudeForProfitPerSth), runVaultLeft)
+            Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), PROFIT_PER_RUNNING_VAULT_SHARE_KEY), Add(profitPerRunNingVaultShareToBeAdd, getProfitPerRunningVaultShare(currentRound)))
 
     Notify(["bet", currentRound, account, number, theNumber,ongAmount, payOutToWin])
     return True
@@ -629,7 +625,7 @@ def getBankersInvestment(roundNumber):
     return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), BANKERS_INVESTMENT_KEY))
 
 def getIncreasingRunnVault(roundNumber):
-    return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), INCREASING_RUNN_VAULT_KEY))
+    return Get(GetContext(), concatKey(concatKey(ROUND_PREFIX, roundNumber), INCREASING_RUN_VAULT_KEY))
 
 def getRunningVault(roundNumber):
     bankersInvestment = getBankersInvestment(roundNumber)
@@ -694,7 +690,6 @@ def getBankerEarning(account):
     currentRound = getCurrentRound()
     lastTimeUpdateEarnRound = getBankersLastTimeUpdateEarnRound(account)
     earningInStorage = Get(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account))
-
     unsharedProfitOngAmount = 0
     while (lastTimeUpdateEarnRound <= currentRound):
         profitPerRunVaultShare = getProfitPerRunningVaultShare(lastTimeUpdateEarnRound)
