@@ -751,10 +751,10 @@ def updateBankerEarning(account):
     profitPerRunVaultShare = getProfitPerRunningVaultShare(currentRound)
     profitPerRunVaultShareFromKey = concatKey(concatKey(ROUND_PREFIX, currentRound), concatKey(PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY, account))
     profitPerRunVaultShareFrom = Get(GetContext(), profitPerRunVaultShareFromKey)
-    profitPerRunVaultShare = Sub(profitPerRunVaultShare, profitPerRunVaultShareFrom)
+    unsharedProfitPerRunVaultShare = Sub(profitPerRunVaultShare, profitPerRunVaultShareFrom)
     earning = getBankerEarning(account)
     lastTimeUpdateEarnRound = getBankersLastTimeUpdateEarnRound(account)
-    if profitPerRunVaultShare > 0 or lastTimeUpdateEarnRound != currentRound:
+    if unsharedProfitPerRunVaultShare > 0 or lastTimeUpdateEarnRound != currentRound:
         Put(GetContext(), concatKey(BANKER_EARNING_BALANCE_PREFIX, account), earning)
         Put(GetContext(), concatKey(BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY, account), currentRound)
         Put(GetContext(), profitPerRunVaultShareFromKey, profitPerRunVaultShare)
