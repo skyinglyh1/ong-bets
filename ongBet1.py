@@ -227,8 +227,6 @@ def Main(operation, args):
             return False
         account = args[0]
         return getBankersLastTimeUpdateEarnRound(account)
-    if operation == "_rollANumber":
-        return _rollANumber()
     return False
 
 ############### for Admin to invoke Begin ##################
