@@ -11,7 +11,7 @@ from boa.interop.System.Transaction import GetTransactionHash
 ContractAddress = GetExecutingScriptHash()
 ONGAddress = bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02')
 
-Admin = ToScriptHash("AShumYRy1bWULWq8PqVTLEeNagxwNzA479")
+Admin = ToScriptHash("XXXX")
 
 INITIALIZED = "Init"
 TOTAL_ONG_KEY = "TotalONG"
