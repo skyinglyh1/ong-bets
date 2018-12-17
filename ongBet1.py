@@ -21,41 +21,58 @@ COMMISSION_KEY = "Commission"
 
 ROUND_PREFIX = "G01"
 CURRENT_ROUND_KEY = "G02"
-# ROUND_PREFIX + CURRENT_ROUND_KEY + ROUND_STATUS
+# ROUND_PREFIX + CURRENT_ROUND_KEY + ROUND_STATUS --
+# 用来存储第roundNumber轮的游戏的状态，即RUNNING 或 END
 ROUND_STATUS = "G03"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + DIVIDEND_FOR_BANKERS_PERCENTAGE  -- to store 48
+# 用来存储第roundNumber轮的，流向持有分红的比例
 DIVIDEND_FOR_BANKERS_PERCENTAGE = "G04"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + RUNNING_VAULT_PERCENTAGE -- to store 50
+# 用来存储第roundNumber轮的，流向游戏运营资金池的比例
 RUNNING_VAULT_PERCENTAGE = "G05"
-# ROUND_PREFIX +  CURRENT_ROUND_KEY + BANKERS_LIST_KEY
+# ROUND_PREFIX +  CURRENT_ROUND_KEY + BANKERS_LIST_KEY --
+# 用来存储第roundNumber轮的所有庄家，是一个列表，元素为庄家地址
 BANKERS_LIST_KEY = "G06"
-# ROUND_PREFIX + CURRENT_ROUND_KEY + BANKERS_INVESTMENT_KEY -- total investment
+# ROUND_PREFIX + CURRENT_ROUND_KEY + BANKERS_INVESTMENT_KEY -- total investment --
+# 用来存储第roundNumber轮的所有庄家的投资金额，(若庄家退出，则减掉其投资金额)
 BANKERS_INVESTMENT_KEY = "G07"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + INCREASING_RUN_VAULT_KEY -- ong that has been added into the running vault
+# 用来存储第roundNumber轮入庄的所有人的投资金额(只增不减)
 INCREASING_RUN_VAULT_KEY = "G08"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + REAL_TIME_RUNNING_VAULT -- running vault except the earnings, ong that can be paid to the players
+# 用来存储第roundNumber轮的用于游戏运营的实时资金池(玩家输时，庄家所赚立即分掉；玩家赢时，实时资金池减少)
 REAL_TIME_RUNNING_VAULT = "G09"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY
+# 在第roundNumber轮，用于存储庄家入金时，之前所有庄家每份投资应享有的分红(来源于之后进入的庄家) 【截止点】。
 PROFIT_PER_INVESTMENT_FOR_BANKERS_KEY = "G10"
+# 在第roundNumber轮，用于存储庄家入金时，之前所有庄家每份投资应享有的利润(来源于游戏运营，庄家所获取的利润) 【截止点】。
 PROFIT_PER_RUNNING_VAULT_SHARE_KEY = "G11"
 
 # ROUND_PREFIX + CURRENT_ROUND_KEY + PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY + account
+# 在第roundNumber轮，用于存储庄家入金时，之前所有庄家每份投资应享有的分红(来源于之后进入的庄家) 【起始点】。
 PROFIT_PER_INVESTMENT_FOR_BANKER_FROM_KEY = "U01"
+# 在第roundNumber轮，用于存储庄家入金时，之前所有庄家每份投资应享有的利润(来源于游戏运营，庄家所获取的利润) 【起始点】。
 PROFIT_PER_RUNNING_VAULT_SHARE_FROM_KEY = "U02"
 # ROUND_PREFIX + CURRENT_ROUND_KEY + BANKER_INVEST_BALANCE_PREFIX + account -> ong that has been invested into this game by the banker(account)
+# 用于存储第roundNumber轮游戏，庄家(account)所投资的ONG量
 BANKER_INVEST_BALANCE_PREFIX = "U03"
 # BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY + account  -- store the round number the banker last time updates his dividend
+# 用于存储庄家account 上一次更新他的持有分红的时候是第多少轮
 BANKER_LAST_TIME_UPDATE_DIVIDEND_ROUND_KEY = "U04"
 # BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY + account  -- store the round number the banker last time updates his earning
+# 用于存储庄家account 上一次更新他的游戏运营所赚的利润分红的时候是第多少轮
 BANKER_LAST_TIME_UPDATE_EARNING_ROUND_KEY = "U05"
 # BANKER_DIVIDEND_BALANCE_PREFIX + account -- store the account's dividend as a banker
+# 用于上一次更新存储时，庄家所享有的持有分红
 BANKER_DIVIDEND_BALANCE_PREFIX = "U06"
 # BANKER_DIVIDEND_BALANCE_PREFIX + account -- store the account's shared earning as a banker from the running vault
+# 用于上一次更新存储时，庄家所享有的游戏运营所享有的利润分红
 BANKER_EARNING_BALANCE_PREFIX = "U07"
 # # BANKER_WITHDRAWN_BALANCE_KEY + account -- store the account's withdrawn amount of ong
 # BANKER_WITHDRAWN_BALANCE_KEY = "U09"
 bankerQuota = 1000000000000
 
+# 用来标志第roundNumber轮的游戏状态是进行中还是已结束
 STATUS_ON = "RUNNING"
 STATUS_OFF = "END"
 
