@@ -238,7 +238,7 @@ def init():
     RequireWitness(Admin)
     inited = Get(GetContext(), INITIALIZED)
     if inited:
-        Notify(["Idiot admin, you have initialized the contract!"])
+        Notify(["Idiot,the contract has already been initialized!"])
         return False
     else:
         Put(GetContext(), INITIALIZED, 'Y')
@@ -292,10 +292,7 @@ def bankerInvest(account, ongAmount):
     currentRound = getCurrentRound()
     if getRoundGameStatus(currentRound) == STATUS_OFF:
         newRound = Add(currentRound, 1)
-        if currentRound == 0:
-            RequireWitness(Admin)
-        else:
-            RequireWitness(account)
+        RequireWitness(account)
         if Add(getRunningVaultPercentage(newRound), getDividendForBankersPercentage(newRound)) != 98:
             runVaultPercentage = getRunningVaultPercentage(currentRound)
             dividendPercentage = getDividendForBankersPercentage(currentRound)
