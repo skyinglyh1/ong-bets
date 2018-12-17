@@ -10,10 +10,8 @@ from boa.interop.System.Transaction import GetTransactionHash
 # the script hash of this contract
 ContractAddress = GetExecutingScriptHash()
 ONGAddress = bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02')
-# E.T account
-# Admin = ToScriptHash("ARiYs54Kq9T5h3QY1xTyXGb9gsJ1TUbMB7")
-# skyinglyh account
-Admin = ToScriptHash("AQf4Mzu1YJrhz9f3aRkkwSm9n3qhXGSh4p")
+
+Admin = ToScriptHash("AShumYRy1bWULWq8PqVTLEeNagxwNzA479")
 
 INITIALIZED = "Init"
 TOTAL_ONG_KEY = "TotalONG"
@@ -480,7 +478,7 @@ def bankerWithdrawBeforeExit(account):
     # update real time run vault
     Put(GetContext(), concatKey(concatKey(ROUND_PREFIX, currentRound), REAL_TIME_RUNNING_VAULT), Sub(getRealTimeRunningVault(currentRound), ongShareInRunningVault))
 
-    Notify(["bankerWithdraw", currentRound, account, ongShareInRunningVault])
+    Notify(["bankerWithdrawShare", currentRound, account, ongShareInRunningVault])
     return ongShareInRunningVault
 
 def bankerExit(account):
