@@ -233,7 +233,7 @@ def Main(operation, args):
 
 ############### for Admin to invoke Begin ##################
 def init():
-    RequireWitness(Admin)
+    # RequireWitness(Admin)
     inited = Get(GetContext(), INITIALIZED)
     if inited:
         Notify(["Idiot,the contract has already been initialized!"])
