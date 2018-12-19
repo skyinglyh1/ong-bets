@@ -1,31 +1,43 @@
-English | [中文](HowToPlay_CN.md)
+## Basic Rules
 
-How to play
+Wontology is the decentralized and trustful blockchain game based on the ontology public chain network. The basic rules of Wontology are the followings.
 
-## For bankers
+1. This is a game of rolling a 'dice' that is assumed to have 100 sides and comparing the result with your guessed result.
+   The result of rolling the 'dice' is determined by the current block hash of ontology chain and the transaction hash.
 
-1. Please fill the amount of ONG you want to invest, click invest and send ONG.
-2. 2% of the banker's investment will treated as team commission, 48% will be treated as dividend for all the 
-    present bankers based on the bankers' investment quota. And the other 50% will go to the running pot for running the ONG Dice bet game,
-    which is for the bets between bankers and players.
-   
-3. The running pot is composed of 50% of all the bankers' investment.
-4. Every time when the bankers make profit, the profit will be splitted into the bankers' account.
-   And any banker can withdraw his quota of profit immediately.
-   
-5. When the running pot is less than 5% of all the bankers' investment. The rest ONG in the 
-   pot will be given to all the bankers. Then the current round game ends and the next round of game starts.
-   
-6. If any banker wants to quit, he can immediately withdraw his dividend from other bankers, his earnings from running the ONG Dice bet game,
-   and his quota from the current running pot.
-   
-## For players
-1. Please make sure your chrome has cyano wallet plugin. If not, please download and install cyano wallet, for more info please go to [here](http://dev-docs.ont.io/#/docs-en/Cyano/01-installation).
-2. Make sure there exist some ONG in your account. You can create a new account and transfer some ONG to this account. You can also import your wallet file into your cyano wallet plugin.
-3. Set the amount of ONG you want to bet, and adjust the slider to change your chance of winning.
-4. Click on BET
-5. If the generated random number is lower than your selected number, you win!
+2. The Wontology game is composed of the platform, the bankers and the players.
 
-If your bet action failed, please check if your account has enough ONG balance. You can check the winning records in the latest one hours at the right side. You can also check the bet records below.
+3. How to play for the bankers?
 
-If you have any other question, please feel free to send email to support@ongbet.io.
+   1. The banker should invest at least 1000 ONG to become a banker.
+
+   2. The flow of bankers' investment.
+
+      | Service Fee | Banker Incentives  | Running Vault |
+      | -------- | -------- | ------ |
+      | 2%       | 48%      | 50%    |
+
+   3. The profit of the platform will be given to all the bankers. The current round game will end until the real time running vault 
+      is less than 10% of the asset that flowed into the running vault.
+      When the new bankers come in, the next round will start automatically.
+
+
+4. How to play for the players?
+
+   1. The player can set the amount of wager and the guessed number. The odds will change based on the guessed number, and the same for the winning chance.
+      If the guessed number is **smaller** than the result of rolling the dice, the player will be able to win the odds times of his wager. Otherwise, he will lose his wager.
+
+   2. The player can bet anytime and get the betting result immediately. And the profit is transferred to the player's account immediately.
+
+   3. The dice is assumed to have 100 sides, and the number of one side is in the range of 1 to 100.
+
+   4. The betting (guessed) number for the player is in the range of 2 to 96.
+
+   5. The winning chance for player is the range of 1% to 95%.
+<!-- 
+   6. 赔率满足如下公式，赔率 x 中奖概率 = 0.98（约），赔率取小数点后三位，向下取整。回报金额从庄家游戏运营池获得。
+
+      | 中奖补偿 | 运营成本 | 庄家激励 |
+      | -------- | -------- | -------- |
+      | 98%      | 1%       | 1%       | -->
+
