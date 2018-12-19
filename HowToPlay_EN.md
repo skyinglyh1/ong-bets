@@ -1,9 +1,9 @@
 ## Basic Rules
 
-Wontology is the decentralized and trustful blockchain game based on the ontology public chain network. The basic rules of Wontology are the followings.
+Wontology is the decentralized and trustful blockchain game based on the Ontology public chain network. The basic rules of Wontology are the followings.
 
 1. This is a game of rolling a 'dice' that is assumed to have 100 sides and comparing the result with your guessed number.
-   The result of rolling the 'dice' is determined by the current block hash of ontology chain and the transaction hash.
+   The result of rolling the 'dice' is determined by the current block hash of Ontology chain and the transaction hash.
 
 2. The Wontology game is composed of the platform, the bankers and the players.
 
