@@ -2,7 +2,7 @@
 
 Wontology is the decentralized and trustful blockchain game based on the ontology public chain network. The basic rules of Wontology are the followings.
 
-1. This is a game of rolling a 'dice' that is assumed to have 100 sides and comparing the result with your guessed result.
+1. This is a game of rolling a 'dice' that is assumed to have 100 sides and comparing the result with your guessed number.
    The result of rolling the 'dice' is determined by the current block hash of ontology chain and the transaction hash.
 
 2. The Wontology game is composed of the platform, the bankers and the players.
@@ -25,7 +25,7 @@ Wontology is the decentralized and trustful blockchain game based on the ontolog
 4. How to play for the players?
 
    1. The player can set the amount of wager and the guessed number. The odds will change based on the guessed number, and the same for the winning chance.
-      If the guessed number is **smaller** than the result of rolling the dice, the player will be able to win the odds times of his wager. Otherwise, he will lose his wager.
+      If the result of rolling the dice is **smaller** than the player's guessed number, the player will be able to win the odds times of his wager. Otherwise, he will lose his wager.
 
    2. The player can bet anytime and get the betting result immediately. And the profit is transferred to the player's account immediately.
 
