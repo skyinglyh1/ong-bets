@@ -15,7 +15,7 @@ Wontology is the decentralized and trustful blockchain game based on the Ontolog
 
       | Service Fee | Banker Incentives  | Running Vault |
       | -------- | -------- | ------ |
-      | 2%       | 48%      | 50%    |
+      | 2%       | 8%      | 90%    |
 
    3. The profit of the platform will be given to all the bankers. The current round game will end until the real time running vault 
       is less than 10% of the asset that flowed into the running vault, then the rest asset in running vault will be be assigned to all the bankers.
